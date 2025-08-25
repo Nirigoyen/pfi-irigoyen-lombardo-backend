@@ -5,6 +5,13 @@ import traceback
 import requests
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse, Response
+from lt_client import try_get_characters_and_places
+from openlibrary_client import _get_work_json_safe  # importa helpers si los dejaste públicos
+
+
+from fastapi import Query
+from lt_client import fetch_ck_work_xml  # ya lo tenés con cloudscraper
+from parsers import debug_parse
 
 from obs_client import upload_bytes, download_bytes
 from db import (
@@ -74,7 +81,7 @@ async def ingest_book(
         # 2) LibraryThing: personajes + lugares
         # lt_xml = fetch_librarything_xml(isbn, libr_api_key)
         # chars, places = parse_librarything_xml(lt_xml)
-        chars, places, lt_status = try_fetch_lt_chars_places(isbn, libr_api_key)
+        chars, places, lt_status = try_get_characters_and_places(isbn, libr_api_key)
 
 
         # 3) Cover -> OBS (longitood)
@@ -114,15 +121,14 @@ async def ingest_book(
         n_places = attach_places(isbn, places, top_n=5)
         n_genres = attach_genres(isbn, genres_to_use, top_n=3)
 
-        return JSONResponse(
-            {
+        return JSONResponse({
             "isbn": isbn,
             "pdf_obs_key": pdf_key,
             "cover_obs_key": cover_key,
             "characters_inserted": n_chars,
             "places_inserted": n_places,
             "genres_inserted": n_genres,
-            "lt_status": lt_status,  # <-- agregado
+            "lt_status": lt_status,
             "metadata": {
                 "title": title_to_use,
                 "author": author_to_use,
@@ -131,8 +137,7 @@ async def ingest_book(
                 "genres": genres_to_use,
                 "openlibrary_raw": ol_meta.get("raw", {})
             }
-            }
-        )
+        })
 
     except requests.HTTPError as rexc:
         traceback.print_exc()
@@ -165,3 +170,34 @@ def get_book(isbn: str):
     if not info:
         raise HTTPException(404, f"Libro ISBN {isbn} no encontrado")
     return info
+
+
+
+@app.get("/debug/librarything")
+def debug_librarything(
+    isbn: str = Query(...),
+    apikey: str = Query(...),
+    raw: bool = Query(False)
+):
+    xml_bytes = fetch_ck_work_xml(isbn, apikey)
+    info = debug_parse(xml_bytes)
+
+    if raw:
+        # ¡CUIDADO! esto puede ser grande; sólo para inspección rápida
+        return {
+            "info": info,
+            "xml_first_500": xml_bytes[:500].decode("utf-8", errors="replace"),
+        }
+    return info
+
+@app.get("/debug/openlibrary")
+def debug_openlibrary(isbn: str = Query(...)):
+    data = fetch_with_olclient(isbn)
+    wj = _get_work_json_safe(f"/works/{data['raw'].get('work_olid')}")
+    return {
+        "resolved": data["raw"],
+        "title": data["title"],
+        "author": data["author"],
+        "has_synopsis": bool(data["synopsis"]),
+        "subjects_count": len(wj.get("subjects", [])) if wj else None,
+    }

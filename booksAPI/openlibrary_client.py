@@ -6,9 +6,7 @@ from olclient.openlibrary import OpenLibrary  # cliente oficial
 
 OL_BASE = "https://openlibrary.org"
 COVERS = "https://covers.openlibrary.org"  # no se usa aquí (mantenés longitood)
-UA = {
-    "User-Agent": os.getenv("OPENLIBRARY_USER_AGENT", "Livrario/1.0 (+contact)")
-}
+UA = {"User-Agent": os.getenv("OPENLIBRARY_USER_AGENT", "Livrario/1.0 (+contact)")}
 TIMEOUT = int(os.getenv("HTTP_TIMEOUT_SECONDS", "15"))
 
 # ----- helpers ISBN -----
@@ -59,6 +57,29 @@ def _edition_by_isbn(isbn: str) -> Optional[dict]:
     r.raise_for_status()
     return r.json()
 
+# ----- fallbacks JSON crudos (robustos) -----
+def _get_work_json_safe(work_key: str) -> dict | None:
+    """GET /works/{OLID}.json → dict o None si 404/err."""
+    wk = work_key if work_key.startswith("/works/") else f"/works/{work_key}"
+    try:
+        r = requests.get(f"{OL_BASE}{wk}.json", headers=UA, timeout=TIMEOUT)
+        if r.status_code == 200:
+            return r.json()
+        return None
+    except Exception:
+        return None
+
+def _get_author_json_safe(author_key: str) -> dict | None:
+    """GET /authors/{OLID}.json → dict o None si 404/err."""
+    ak = author_key if author_key.startswith("/authors/") else f"/authors/{author_key}"
+    try:
+        r = requests.get(f"{OL_BASE}{ak}.json", headers=UA, timeout=TIMEOUT)
+        if r.status_code == 200:
+            return r.json()
+        return None
+    except Exception:
+        return None
+
 # ----- normalización -----
 GENRES_MAP = {
     "Fantasía": ["fantasy", "magic", "sword", "witch", "dragon"],
@@ -98,7 +119,7 @@ def _subjects_to_genres(subjects: List[str], limit: int = 3) -> List[str]:
     ranked = sorted(scores.items(), key=lambda kv: (-kv[1], kv[0]))
     return [g for g, sc in ranked if sc > 0][:limit]
 
-# ----- función principal -----
+# ----- función principal (con fallbacks) -----
 def fetch_with_olclient(isbn_in: str) -> Dict[str, Any]:
     """
     Retorna:
@@ -136,39 +157,59 @@ def fetch_with_olclient(isbn_in: str) -> Dict[str, Any]:
     if not work_key:
         raise ValueError("No se encontró Work para el ISBN en Open Library.")
 
-    # 3) Cliente oficial para Work/Author
     ol = OpenLibrary()
     work_olid = work_key.split("/")[-1]
-    work_obj = ol.Work.get(work_olid)
 
-    title = getattr(work_obj, "title", None)
-    synopsis = _flat_desc(getattr(work_obj, "description", None))
-    subjects = list(getattr(work_obj, "subjects", []) or [])
-
+    # 3) Intento A: cliente oficial; si falla, Intento B: JSON crudo
+    title = synopsis = None
+    subjects: List[str] = []
     author_olid = None
+
     try:
+        work_obj = ol.Work.get(work_olid)  # <- puede fallar con algunos registros
+        title = getattr(work_obj, "title", None)
+        synopsis = _flat_desc(getattr(work_obj, "description", None))
+        subjects = list(getattr(work_obj, "subjects", []) or [])
         authors_meta = getattr(work_obj, "authors", None)
         if isinstance(authors_meta, list) and authors_meta:
             maybe = authors_meta[0]
             if isinstance(maybe, dict):
-                a = maybe.get("author") or {}
+                a = (maybe.get("author") or {})
                 if a.get("key"):
                     author_olid = a["key"].split("/")[-1]
     except Exception:
-        author_olid = None
+        # Fallback robusto al JSON crudo del work
+        wj = _get_work_json_safe(work_key)
+        if not wj:
+            raise  # si ni el JSON existe, propagamos el error
+        title = title or wj.get("title")
+        synopsis = synopsis or _flat_desc(wj.get("description"))
+        subjects = subjects or list(wj.get("subjects") or [])
+        if not author_olid:
+            authors = wj.get("authors") or []
+            if authors and isinstance(authors[0], dict):
+                akey = (authors[0].get("author") or {}).get("key")
+                if akey:
+                    author_olid = akey.split("/")[-1]
 
+    # 4) Autor: cliente oficial → JSON crudo → Search doc
     author_name = None
     author_bio = None
     if author_olid:
-        author_obj = ol.Author.get(author_olid)
-        author_name = getattr(author_obj, "name", None)
-        author_bio = _flat_desc(getattr(author_obj, "bio", None))
-    else:
-        # último recurso: usar lo que vino del Search
-        if doc and doc.get("author_name"):
-            author_name = doc["author_name"][0] if isinstance(doc["author_name"], list) else doc["author_name"]
+        try:
+            author_obj = ol.Author.get(author_olid)
+            author_name = getattr(author_obj, "name", None)
+            author_bio = _flat_desc(getattr(author_obj, "bio", None))
+        except Exception:
+            aj = _get_author_json_safe(author_olid)
+            if aj:
+                author_name = author_name or aj.get("name")
+                author_bio = author_bio or _flat_desc(aj.get("bio"))
+    if not author_name and doc and doc.get("author_name"):
+        author_name = (doc["author_name"][0] if isinstance(doc["author_name"], list) else doc["author_name"])
 
-    genres = _subjects_to_genres(subjects, limit=3)
+    # 5) Géneros (top-3) desde subjects del WORK
+    genres = _subjects_to_genres([str(s) for s in (subjects or [])], limit=3)
 
     return {
         "title": title,
