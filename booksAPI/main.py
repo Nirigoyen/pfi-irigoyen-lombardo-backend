@@ -9,32 +9,51 @@ from fastapi.responses import JSONResponse, Response
 from obs_client import upload_bytes, download_bytes
 from db import (
     upsert_book, attach_characters, attach_places, attach_genres,
-    get_author_by_isbn, get_cover_key_by_isbn, get_book_info
+    get_author_by_isbn, get_cover_key_by_isbn, get_book_info,
+    update_author_description  # <-- nuevo helper
 )
 from parsers import parse_librarything_xml
+from openlibrary_client import fetch_with_olclient  # <-- NUEVO
 
 app = FastAPI(title="Book Ingest API")
 
 LIBRARYTHING_ENDPOINT = "https://www.librarything.com/services/rest/1.1/"
 
 # ---------- Helpers externos (ya existentes) ----------
+LIBRARYTHING_ENDPOINT = "https://www.librarything.com/services/rest/1.1/"
+UA = {"User-Agent": os.getenv("OPENLIBRARY_USER_AGENT", "Livrario/1.0 (+contact)")}
+
 def fetch_librarything_xml(isbn: str, api_key: str) -> bytes:
+    # LibraryThing doc indica 'api_key' (con guion bajo). Probamos con ese.
     params = {
         "method": "librarything.ck.getwork",
         "isbn": isbn,
-        "apikey": api_key,
+        "apikey": api_key,   # <-- clave
     }
-    r = requests.get(LIBRARYTHING_ENDPOINT, params=params, timeout=20)
+    r = requests.get(LIBRARYTHING_ENDPOINT, params=params, headers=UA, timeout=20)
     r.raise_for_status()
     return r.content
 
+def try_fetch_lt_chars_places(isbn: str, api_key: str) -> tuple[list[str], list[str], str]:
+    """Best-effort: si LT falla (403 u otro), devolvemos listas vacías y un status legible."""
+    try:
+        xml_bytes = fetch_librarything_xml(isbn, api_key)
+        chars, places = parse_librarything_xml(xml_bytes)
+        return chars, places, "ok"
+    except requests.HTTPError as e:
+        # 403 es frecuente por Turnstile / API temporalmente off
+        return [], [], f"lt_error_http_{e.response}"
+    except Exception as e:
+        return [], [], f"lt_error_{type(e).__name__}"
+
 def fetch_cover_bytes(isbn: str) -> bytes:
+    # Mantenemos la API de covers que preferís
     url = f"https://bookcover.longitood.com/bookcover/{isbn}"
     r = requests.get(url, timeout=20)
     r.raise_for_status()
     return r.content
 
-# ---------- Endpoint principal de ingesta (ya existente) ----------
+# ---------- Endpoint principal de ingesta (actualizado) ----------
 @app.post("/ingest")
 async def ingest_book(
     isbn: str = Form(...),
@@ -53,21 +72,31 @@ async def ingest_book(
         upload_bytes(pdf_key, pdf_bytes, content_type="application/pdf")
 
         # 2) LibraryThing: personajes + lugares
-        lt_xml = fetch_librarything_xml(isbn, libr_api_key)
-        chars, places = parse_librarything_xml(lt_xml)
+        # lt_xml = fetch_librarything_xml(isbn, libr_api_key)
+        # chars, places = parse_librarything_xml(lt_xml)
+        chars, places, lt_status = try_fetch_lt_chars_places(isbn, libr_api_key)
 
-        # 3) Cover -> OBS
+
+        # 3) Cover -> OBS (longitood)
         cover_data = fetch_cover_bytes(isbn)
         cover_key = f"covers/{isbn}.jpg"
         upload_bytes(cover_key, cover_data, content_type="image/jpeg")
 
-        # 4) TODOs externos (título, autor, sinopsis, géneros)
-        title_to_use = force_title or None  # TODO: reemplazar con otra API
-        author_to_use = force_author or None  # TODO: reemplazar con otra API
-        synopsis_to_use = None               # TODO
-        genres_to_use: list[str] = []        # TODO (top 3)
+        # 4) Open Library → título/autor/bio/sinopsis/géneros
+        ol_meta = fetch_with_olclient(isbn)
+        title_from_ol = ol_meta.get("title")
+        author_from_ol = ol_meta.get("author")
+        author_bio = ol_meta.get("author_description")
+        synopsis_from_ol = ol_meta.get("synopsis")
+        genres_from_ol = ol_meta.get("genres") or []
 
-        # 5) Persistencia
+        # Respeta force_* si vienen
+        title_to_use = force_title or title_from_ol
+        author_to_use = force_author or author_from_ol
+        synopsis_to_use = synopsis_from_ol
+        genres_to_use: list[str] = list(genres_from_ol)[:3]
+
+        # 5) Persistencia principal (crea libro + autor por nombre si aplica)
         upsert_book(
             isbn=isbn,
             title=title_to_use,
@@ -75,25 +104,35 @@ async def ingest_book(
             synopsis=synopsis_to_use,
             cover_obs_key=cover_key,
         )
+
+        # 5.1) Bio del autor (si tenemos nombre + descripción)
+        if author_to_use and author_bio:
+            update_author_description(author_to_use, author_bio)
+
+        # 5.2) Personajes / Lugares / Géneros
         n_chars = attach_characters(isbn, chars)
         n_places = attach_places(isbn, places, top_n=5)
         n_genres = attach_genres(isbn, genres_to_use, top_n=3)
 
-        return JSONResponse({
+        return JSONResponse(
+            {
             "isbn": isbn,
             "pdf_obs_key": pdf_key,
             "cover_obs_key": cover_key,
             "characters_inserted": n_chars,
             "places_inserted": n_places,
             "genres_inserted": n_genres,
-            "todos": {
-                "title": "TODO desde otra API (o usar force_title)",
-                "author": "TODO desde otra API (o usar force_author)",
-                "author_description": "TODO desde otra API",
-                "synopsis": "TODO desde otra API",
-                "genres": "TODO desde otra API (top 3)"
+            "lt_status": lt_status,  # <-- agregado
+            "metadata": {
+                "title": title_to_use,
+                "author": author_to_use,
+                "author_description": author_bio,
+                "synopsis": synopsis_to_use,
+                "genres": genres_to_use,
+                "openlibrary_raw": ol_meta.get("raw", {})
             }
-        })
+            }
+        )
 
     except requests.HTTPError as rexc:
         traceback.print_exc()
@@ -104,21 +143,13 @@ async def ingest_book(
 
 @app.get("/books/{isbn}/author")
 def get_author(isbn: str):
-    """
-    Devuelve autor y su descripción (si existe), según el libro (isbn).
-    """
     author = get_author_by_isbn(isbn)
     if not author:
-        # Puede ser que no haya autor asignado todavía (TODO pendiente)
         raise HTTPException(404, f"No hay autor asociado al ISBN {isbn}")
     return {"isbn": isbn, "author": author}
 
 @app.get("/books/{isbn}/cover")
 def get_cover(isbn: str):
-    """
-    Devuelve la portada como bytes (image/jpeg) desde OBS.
-    Si preferís sólo la key, podés devolver JSON usando get_cover_key_by_isbn.
-    """
     key = get_cover_key_by_isbn(isbn)
     if not key:
         raise HTTPException(404, f"No hay cover asociado al ISBN {isbn}")
@@ -126,17 +157,10 @@ def get_cover(isbn: str):
         data = download_bytes(key)
     except Exception as e:
         raise HTTPException(404, f"No se pudo descargar la portada: {e}")
-    # asumimos .jpg (si guardás otro mime, podés detectarlo por extensión)
     return Response(content=data, media_type="image/jpeg")
 
 @app.get("/books/{isbn}")
 def get_book(isbn: str):
-    """
-    Devuelve info completa del libro:
-      - isbn, title, synopsis, cover_obs_key
-      - author { id, name, description }
-      - genres [hasta 3], places [hasta 5], characters [lista]
-    """
     info = get_book_info(isbn)
     if not info:
         raise HTTPException(404, f"Libro ISBN {isbn} no encontrado")

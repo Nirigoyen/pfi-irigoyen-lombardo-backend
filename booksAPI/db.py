@@ -156,3 +156,12 @@ def get_book_info(isbn: str) -> Optional[dict]:
             "places": places,
             "characters": characters
         }
+    
+def update_author_description(author_name: str, description: str) -> None:
+    if not author_name or not description:
+        return
+    with conn() as c, c.cursor() as cur:
+        # Asegura existencia del autor por nombre
+        cur.execute("INSERT INTO authors (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (author_name,))
+        cur.execute("UPDATE authors SET description = COALESCE(%s, description) WHERE name = %s",
+                    (description, author_name))
