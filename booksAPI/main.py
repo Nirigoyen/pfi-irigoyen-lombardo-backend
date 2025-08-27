@@ -1,8 +1,10 @@
 # booksAPI/main.py
 import os
+import io
 import traceback
 import requests
 import logging
+from typing import Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
 
@@ -13,31 +15,70 @@ from db import (
     update_author_description
 )
 
-# LibraryThing (cloudscraper) y parser
+# LT (cloudscraper) y parser
 from lt_client import try_get_characters_and_places, fetch_ck_work_xml
 from parsers import debug_parse
 
-# Open Library + normalizador de géneros
+# Open Library (con fallbacks) + normalizador de géneros
 from openlibrary_client import fetch_with_olclient, normalize_genres_from_subjects
 
-# Google Books
+# Google Books ES (con fallback sin key)
 from google_books import gb_by_isbn_es, gb_pick_fields
+
+# Conversión a JPG
+from PIL import Image  # -> requerís 'Pillow' en requirements.txt
 
 app = FastAPI(title="Book Ingest API")
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 log = logging.getLogger("ingest")
 
+# URL pública fija del bucket OBS (pedido)
+OBS_PUBLIC_BASE = "https://livrario-books.obs.la-south-2.myhuaweicloud.com"
 
-# ---------- Helpers externos ----------
-def fetch_cover_bytes(isbn: str) -> bytes:
+
+# ---------- Covers (longitood -> JPG fijo) ----------
+def _image_bytes_to_jpeg(src_bytes: bytes, quality: int = 90) -> Optional[bytes]:
     """
-    Descarga portada desde longitood (no cachea). Subís el resultado a OBS luego.
+    Convierte bytes de imagen (png/webp/jpg/etc) a JPEG RGB.
+    Si falla la conversión, devuelve None.
     """
-    url = f"https://bookcover.longitood.com/bookcover/{isbn}"
-    r = requests.get(url, timeout=20)
+    try:
+        with Image.open(io.BytesIO(src_bytes)) as im:
+            # Convertir a RGB (quita alpha si hay)
+            if im.mode not in ("RGB", "L"):
+                im = im.convert("RGB")
+            elif im.mode == "L":
+                im = im.convert("RGB")
+
+            out = io.BytesIO()
+            im.save(out, format="JPEG", quality=quality, optimize=True)
+            return out.getvalue()
+    except Exception as e:
+        log.warning("Fallo convirtiendo cover a JPEG: %s", e)
+        return None
+
+
+def fetch_cover_from_longitood_as_jpg(isbn: str) -> bytes:
+    """
+    1) Llama a longitood y obtiene JSON {"url": "<imagen real>"}
+    2) Descarga la imagen real
+    3) Convierte a JPEG y retorna los bytes JPEG (si no puede, retorna los bytes originales)
+    """
+    api_url = f"https://bookcover.longitood.com/bookcover/{isbn}"
+    r = requests.get(api_url, timeout=20)
     r.raise_for_status()
-    return r.content
+    data = r.json()
+    img_url = data.get("url")
+    if not img_url:
+        raise ValueError("longitood: respuesta sin 'url'")
+
+    r2 = requests.get(img_url, timeout=30)
+    r2.raise_for_status()
+    src_bytes = r2.content
+
+    jpg_bytes = _image_bytes_to_jpeg(src_bytes)
+    return jpg_bytes if jpg_bytes is not None else src_bytes  # fallback: sube como "jpg" igual
 
 
 # ---------- Endpoint principal de ingesta (sin Wikipedia/Wikidata) ----------
@@ -48,11 +89,25 @@ async def ingest_book(
     pdf: UploadFile = File(...),
     force_title: str | None = Form(None),
     force_author: str | None = Form(None),
+    force_reingest: bool = Form(False),  # <-- NUEVO (opcional)
 ):
-    if pdf.content_type != "application/pdf":
-        raise HTTPException(400, "El archivo debe ser PDF")
-
     try:
+        # --- Early exit: si ya existe en DB y no pediste reingestar, devolvemos lo guardado ---
+        if not force_reingest:
+            existing = get_book_info(isbn)
+            if existing:
+                return JSONResponse({
+                    "isbn": isbn,
+                    "skipped": True,
+                    "reason": "already_exists",
+                    "cover_public_url": f"{OBS_PUBLIC_BASE}/covers/{isbn}.jpg",
+                    "book": existing,  # incluye title, synopsis, author, genres, places, characters, cover_obs_key, etc.
+                })
+
+        # Si vamos a reingestar/ingestar por primera vez, validamos PDF
+        if pdf.content_type != "application/pdf":
+            raise HTTPException(400, "El archivo debe ser PDF")
+
         # 1) Subir PDF a OBS
         pdf_bytes = await pdf.read()
         pdf_key = f"books/{isbn}/original.pdf"
@@ -62,10 +117,10 @@ async def ingest_book(
         chars, places, lt_status = try_get_characters_and_places(isbn, libr_api_key)
         log.info("LT status=%s chars=%d places=%d", lt_status, len(chars), len(places))
 
-        # 3) Cover -> OBS (longitood)
-        cover_data = fetch_cover_bytes(isbn)
-        cover_key = f"covers/{isbn}.jpg"
-        upload_bytes(cover_key, cover_data, content_type="image/jpeg")
+        # 3) Cover -> OBS (longitood -> JPG fijo)
+        cover_bytes = fetch_cover_from_longitood_as_jpg(isbn)
+        cover_key = f"covers/{isbn}.jpg"  # clave fija .jpg
+        upload_bytes(cover_key, cover_bytes, content_type="image/jpeg")
 
         # 4) Open Library (base)
         ol_meta = fetch_with_olclient(isbn)
@@ -87,7 +142,7 @@ async def ingest_book(
         except Exception as e:
             log.warning("Google Books ES error: %s", e)
 
-        # 6) Fusión / prioridad (preferimos español cuando exista, sin Wikipedia)
+        # 6) Fusión / prioridad
         title_to_use = force_title or title_from_ol or gb_title_es
         author_to_use = force_author or author_from_ol
 
@@ -122,6 +177,7 @@ async def ingest_book(
             "isbn": isbn,
             "pdf_obs_key": pdf_key,
             "cover_obs_key": cover_key,
+            "cover_public_url": f"{OBS_PUBLIC_BASE}/covers/{isbn}.jpg",
             "characters_inserted": n_chars,
             "places_inserted": n_places,
             "genres_inserted": n_genres,
@@ -159,14 +215,12 @@ def get_author(isbn: str):
 
 @app.get("/books/{isbn}/cover")
 def get_cover(isbn: str):
-    key = get_cover_key_by_isbn(isbn)
-    if not key:
-        raise HTTPException(404, f"No hay cover asociado al ISBN {isbn}")
-    try:
-        data = download_bytes(key)
-    except Exception as e:
-        raise HTTPException(404, f"No se pudo descargar la portada: {e}")
-    return Response(content=data, media_type="image/jpeg")
+    """
+    Devuelve la URL pública del cover en el bucket OBS, siempre:
+    https://livrario-books.obs.la-south-2.myhuaweicloud.com/covers/<ISBN>.jpg
+    """
+    # Si quisieras validar que existe en OBS, podrías hacer un HEAD a esa URL.
+    return {"url": f"{OBS_PUBLIC_BASE}/covers/{isbn}.jpg"}
 
 @app.get("/books/{isbn}")
 def get_book(isbn: str):
@@ -234,17 +288,23 @@ def debug_googlebooks(
 @app.get("/debug/cover")
 def debug_cover(
     isbn: str = Query(..., description="ISBN de la portada (longitood)"),
-    download: bool = Query(False, description="Si true, devuelve la imagen como image/jpeg")
+    download: bool = Query(False, description="Si true, descarga la imagen real y la devuelve como image/jpeg")
 ):
-    url = f"https://bookcover.longitood.com/bookcover/{isbn}"
-    r = requests.get(url, timeout=15)
+    api_url = f"https://bookcover.longitood.com/bookcover/{isbn}"
+    r = requests.get(api_url, timeout=15)
+    r.raise_for_status()
+    data = r.json()
+    img_url = data.get("url")
+
     if not download:
-        return {
-            "status_code": r.status_code,
-            "content_type": r.headers.get("Content-Type"),
-            "content_length": int(r.headers.get("Content-Length", "0")),
-            "url": url
-        }
-    if r.status_code != 200:
-        raise HTTPException(r.status_code, f"No se pudo descargar la portada: HTTP {r.status_code}")
-    return Response(content=r.content, media_type="image/jpeg")
+        return {"resolver_status": r.status_code, "resolver_url": api_url, "image_url": img_url}
+
+    if not img_url:
+        raise HTTPException(404, "longitood no devolvió 'url'")
+
+    r2 = requests.get(img_url, timeout=20)
+    if r2.status_code != 200:
+        raise HTTPException(r2.status_code, f"No se pudo descargar la imagen real: HTTP {r2.status_code}")
+
+    jpg_bytes = _image_bytes_to_jpeg(r2.content) or r2.content
+    return Response(content=jpg_bytes, media_type="image/jpeg")
