@@ -223,3 +223,7 @@ def fetch_with_olclient(isbn_in: str) -> Dict[str, Any]:
             "author_olid": author_olid,
         },
     }
+
+# ----- export público para normalizar géneros desde subjects -----
+def normalize_genres_from_subjects(subjects: List[str], limit: int = 3) -> List[str]:
+    return _subjects_to_genres([str(s) for s in subjects or []], limit=limit)
