@@ -204,6 +204,26 @@ async def ingest_book(
         traceback.print_exc()
         raise HTTPException(500, f"Error interno: {exc}")
 
+@app.get("/book")
+def get_book_by_isbn(
+    isbn: str = Query(..., description="ISBN-10 o ISBN-13"),
+    include_cover_url: bool = Query(True, description="Adjuntar URL pública del cover")
+):
+    """
+    Recupera la info del libro por ISBN vía query param.
+    Ej: GET /book?isbn=9781250319180
+    """
+    info = get_book_info(isbn)
+    if not info:
+        raise HTTPException(404, f"Libro ISBN {isbn} no encontrado")
+
+    # Opcional: agregar la URL pública del cover del bucket
+    if include_cover_url:
+        info = dict(info)  # copiar para no mutar estructuras inmutables
+        info["cover_public_url"] = f"{OBS_PUBLIC_BASE}/covers/{isbn}.jpg"
+
+    return info
+
 
 # ----------- Endpoints existentes -----------
 @app.get("/books/{isbn}/author")
