@@ -18,6 +18,7 @@ def upsert_book(isbn: str, title: Optional[str], author_name: Optional[str],
             cur.execute("INSERT INTO authors (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (author_name,))
             cur.execute("SELECT id FROM authors WHERE name=%s", (author_name,))
             row = cur.fetchone()
+            author_id = row[0] if row else None
 
         cur.execute("""
             INSERT INTO books (isbn, title, author_id, synopsis, cover_obs_key)
