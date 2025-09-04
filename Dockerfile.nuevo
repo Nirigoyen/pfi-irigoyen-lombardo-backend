@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Necesario para instalar openlibrary-client desde GitHub (si lo mantenés)
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git \
+ && apt-get install -y --no-install-recommends git ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
 # Carpeta de trabajo base
@@ -18,10 +18,10 @@ RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt
 
 # Copia tu código (carpeta booksAPI)
-COPY booksAPI/ ./booksAPI
+COPY apiv2/ ./apiv2
 
 # Cambiamos el WD al paquete de la API
-WORKDIR /app/booksAPI
+WORKDIR /app/apiv2
 
 # Usuario no-root
 RUN adduser --disabled-password --gecos "" appuser \
@@ -32,4 +32,4 @@ EXPOSE 8080
 
 # Arranque del API (ahora testfinal.py vive dentro de booksAPI/)
 # Si tu archivo se llama testfinal.py y define `app = FastAPI(...)`, es:
-CMD ["uvicorn", "testfinal:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "testfinal2:app", "--host", "0.0.0.0", "--port", "8080"]
