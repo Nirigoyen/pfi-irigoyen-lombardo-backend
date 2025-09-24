@@ -135,6 +135,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.embeddings
 
 # Spyder project settings
 .spyderproject
@@ -172,3 +173,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+tests/
