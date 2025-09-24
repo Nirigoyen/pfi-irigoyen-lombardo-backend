@@ -1,0 +1,47 @@
+# ---- Runtime base
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Paquetes del sistema:
+# - ca-certificates: necesario para HTTPS (Google Books, OL, Wikipedia)
+# - curl: para HEALTHCHECK (opcional)
+# - git: sólo si realmente lo necesitás; si no, borralo
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      curl \
+      git \
+ && rm -rf /var/lib/apt/lists/*
+
+# Usuario no-root
+RUN adduser --disabled-password --gecos "" appuser
+
+# Carpeta de trabajo base
+WORKDIR /app
+
+# Instala dependencias primero (mejor cache)
+COPY --chown=appuser:appuser requirements.txt .
+RUN pip install --upgrade pip \
+ && pip install -r requirements.txt
+
+# Copia tu código
+# (ajusta el path si tu paquete/directorio se llama distinto)
+COPY --chown=appuser:appuser apiv2/ ./apiv2
+
+# Cambiamos el WD al paquete de la API
+WORKDIR /app/apiv2
+
+USER appuser
+
+EXPOSE 8080
+
+# HEALTHCHECK contra el endpoint /health
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:8080/health || exit 1
+
+# Arranque del API (ajusta el módulo/objeto si tu app cambia de nombre)
+CMD ["uvicorn", "testfinal2local:app", "--host", "0.0.0.0", "--port", "8080", "--proxy-headers"]

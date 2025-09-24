@@ -1,0 +1,26 @@
+--trusted-host pypi.org  # necesario para instalar esdk-obs-python :contentReference[oaicite:0]{index=0}
+
+# Web API
+fastapi==0.111.0
+uvicorn[standard]==0.30.0
+
+# HTTP clientes (OpenLibrary, LibraryThing, covers)
+requests==2.31.0
+python-multipart==0.0.9  # uploads multipart (PDF)
+
+# Base de datos (Postgres)
+psycopg[binary]==3.1.19
+
+# PDFs
+pypdf==4.2.0
+
+# Huawei Cloud OBS (SDK oficial)
+esdk-obs-python>=3.25.3
+
+
+openlibrary-client @ git+https://github.com/internetarchive/openlibrary-client.git
+
+cloudscraper>=1.2.71
+brotli>=1.1.0
+
+Pillow>=10.3.0

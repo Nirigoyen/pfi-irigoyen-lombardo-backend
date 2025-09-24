@@ -31,7 +31,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # === DB helpers (tuyos) ===
 try:
-    from app.db import (
+    from db import (
         upsert_book,
         attach_genres,
         attach_characters,
@@ -49,13 +49,13 @@ except Exception:
 
 # === LibraryThing (tus helpers) ===
 try:
-    from app.lt_client import try_get_characters_and_places
+    from lt_client import try_get_characters_and_places
 except Exception:
     from lt_client import try_get_characters_and_places
 
 # === OBS (tus helpers) ===
 try:
-    from app.obs_client import upload_bytes
+    from obs_client import upload_bytes
 except Exception:
     from obs_client import upload_bytes
 
@@ -719,7 +719,7 @@ def aggregate_book_api(isbn: Optional[str], title: Optional[str], author: Option
             if wk: work_key_hint = wk
             for cand in isbn_candidates:
                 d2 = google_search_by_isbn(cand, lang=lang)
-                if d2 and d.get("items"):
+                if d2 and d2.get("items"):
                     items += d2["items"]
                     prefer_isbn = cand
                     break
