@@ -1266,9 +1266,9 @@ async def ensure_book(
     author: Optional[str] = Form(None, description="Autor (opcional para mejorar el match)"),
     lang: str = Form("es"),
     translate: bool = Form(True),
-    ol_editions_scan: int = Form(60),
+    ol_editions_scan: int = Form(80),
     lt: bool = Form(True),
-    lt_api_key: Optional[str] = Form("b4a490e8886f4dafa809d65749b13bbe"),
+    #lt_api_key: Optional[str] = Form(os.getenv("LIBRARYTHING_API_KEY")),
     top_genres_n: int = Form(3),
     top_places_n: int = Form(5),
     fetch_cover: bool = Form(True, description="Intentar obtener y subir cover de Longitood"),
@@ -1293,6 +1293,9 @@ async def ensure_book(
         print(f"Se envió PDF: filename={pdf.filename} content_type={pdf.content_type} bytes")
 
     # --- 1) Chequear en BD primero ---
+
+    lt_api_key = os.getenv("LIBRARYTHING_API_KEY")
+
     if isbn:
         db_row = get_book_info(isbn)
         if db_row:
