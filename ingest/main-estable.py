@@ -1084,7 +1084,6 @@ def openlibrary_collect_isbns_from_editions(work_key: str, scan_limit: int = 80)
     return out
 
 
-
 # =========================
 # FastAPI
 # =========================
