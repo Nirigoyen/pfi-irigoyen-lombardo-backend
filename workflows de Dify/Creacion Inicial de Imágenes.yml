@@ -1,0 +1,990 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: Creacion Inicial de Imágenes
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/ollama:0.0.7@8fc496b3892344da47db6125c76fc0dbfd8020753f198032751d83f561d9443e
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: code
+      id: 1757951901256-source-17579625350610-target
+      selected: false
+      source: '1757951901256'
+      sourceHandle: source
+      target: '17579625350610'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 17579625350610-source-1757962567038-target
+      selected: false
+      source: '17579625350610'
+      sourceHandle: source
+      target: '1757962567038'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 17579625350610-source-1757962587871-target
+      selected: false
+      source: '17579625350610'
+      sourceHandle: source
+      target: '1757962587871'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 17579625350610-source-1757962617610-target
+      selected: false
+      source: '17579625350610'
+      sourceHandle: source
+      target: '1757962617610'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 17579625350610-source-1757962654081-target
+      selected: false
+      source: '17579625350610'
+      sourceHandle: source
+      target: '1757962654081'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 17579625350610-source-1757962707218-target
+      selected: false
+      source: '17579625350610'
+      sourceHandle: source
+      target: '1757962707218'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: code
+      id: 1757962567038-source-17579633570970-target
+      selected: false
+      source: '1757962567038'
+      sourceHandle: source
+      target: '17579633570970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: code
+      id: 1757962587871-source-17579633570970-target
+      selected: false
+      source: '1757962587871'
+      sourceHandle: source
+      target: '17579633570970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: code
+      id: 1757962617610-source-17579633570970-target
+      selected: false
+      source: '1757962617610'
+      sourceHandle: source
+      target: '17579633570970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: code
+      id: 1757962654081-source-17579633570970-target
+      selected: false
+      source: '1757962654081'
+      sourceHandle: source
+      target: '17579633570970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: code
+      id: 1757962707218-source-17579633570970-target
+      selected: false
+      source: '1757962707218'
+      sourceHandle: source
+      target: '17579633570970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 17579633570970-source-17579633848270-target
+      selected: false
+      source: '17579633570970'
+      sourceHandle: source
+      target: '17579633848270'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 17579633570970-source-1758115825820-target
+      selected: false
+      source: '17579633570970'
+      sourceHandle: source
+      target: '1758115825820'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 17579633848270-source-1761949640537-target
+      source: '17579633848270'
+      sourceHandle: source
+      target: '1761949640537'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1758115825820-source-1761949640537-target
+      source: '1758115825820'
+      sourceHandle: source
+      target: '1761949640537'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: 1761949640537-source-1761949761369-target
+      source: '1761949640537'
+      sourceHandle: source
+      target: '1761949761369'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Inicio
+        type: start
+        variables:
+        - default: Frank Baum
+          label: author
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: author
+        - default: El Maravilloso Mago de Oz
+          label: book_title
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: book_title
+        - default: '9788435034821'
+          label: ISBN
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: ISBN
+        - default: Dorothy
+          label: character
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: character
+        - default: Fantasia
+          label: genre
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: genre
+      height: 192
+      id: '1757951901256'
+      position:
+        x: 30
+        y: 296
+      positionAbsolute:
+        x: 30
+        y: 296
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "def main(character) -> dict:\r\n    character = str(character).strip()\r\
+          \n\r\n    fisico     = f\"¿Cómo es la apariencia física de {character} (rostro,\
+          \ cabello, ojos, piel, edad, contextura)?\"\r\n    vestimenta = f\"¿Cómo\
+          \ se describe la vestimenta/uniforme/capa de {character} (telas, colores,\
+          \ ribetes, botones, emblemas/insignias, accesorios/arma)?\"\r\n    marcas\
+          \     = f\"¿Qué marcas distintivas, cicatrices, heridas, moretones o tatuajes\
+          \ se mencionan de {character}?\"\r\n    expresion  = f\"¿Qué expresión,\
+          \ mirada, ánimo o actitud muestra/tiene {character}?\"\r\n    escenario\
+          \  = f\"¿Qué indicios de escenario sutil compatible con retrato (balcón,\
+          \ banderas, lluvia, brisa, fondo neutro) crees que tiene {character}?\"\r\
+          \n\r\n    return {\r\n        \"fisico\": fisico,\r\n        \"vestimenta\"\
+          : vestimenta,\r\n        \"marcas\": marcas,\r\n        \"expresion\": expresion,\r\
+          \n        \"escenario\": escenario,\r\n    }\r\n"
+        code_language: python3
+        desc: ''
+        outputs:
+          escenario:
+            children: null
+            type: string
+          expresion:
+            children: null
+            type: string
+          fisico:
+            children: null
+            type: string
+          marcas:
+            children: null
+            type: string
+          vestimenta:
+            children: null
+            type: string
+        retry_config:
+          max_retries: 3
+          retry_enabled: false
+          retry_interval: 1000
+        selected: false
+        title: Generacion de prompts
+        type: code
+        variables:
+        - value_selector:
+          - '1757951901256'
+          - character
+          value_type: string
+          variable: character
+      height: 52
+      id: '17579625350610'
+      position:
+        x: 333
+        y: 296
+      positionAbsolute:
+        x: 333
+        y: 296
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: 5121cd80-0b82-4a73-bb5f-4fff8326a849
+            name: isbn
+            value: '{{#1757951901256.ISBN#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '17579625350610'
+        - fisico
+        retrieval_mode: multiple
+        selected: false
+        title: physique
+        type: knowledge-retrieval
+      height: 90
+      id: '1757962567038'
+      position:
+        x: 636
+        y: 296
+      positionAbsolute:
+        x: 636
+        y: 296
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: 18dda92a-9e79-4b6c-b9cb-feaf54ae7766
+            name: isbn
+            value: '{{#1757951901256.ISBN#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '17579625350610'
+        - vestimenta
+        retrieval_mode: multiple
+        selected: false
+        title: Clothes
+        type: knowledge-retrieval
+      height: 90
+      id: '1757962587871'
+      position:
+        x: 636
+        y: 426
+      positionAbsolute:
+        x: 636
+        y: 426
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: 53091a52-6fa8-4ba1-9156-fdc968b58ec3
+            name: isbn
+            value: '{{#1757951901256.ISBN#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '17579625350610'
+        - marcas
+        retrieval_mode: multiple
+        selected: false
+        title: scars
+        type: knowledge-retrieval
+      height: 90
+      id: '1757962617610'
+      position:
+        x: 636
+        y: 556
+      positionAbsolute:
+        x: 636
+        y: 556
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: 7be7c221-c2b6-4523-b6ed-cbb1a4d1a787
+            name: isbn
+            value: '{{#1757951901256.ISBN#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '17579625350610'
+        - expresion
+        retrieval_mode: multiple
+        selected: false
+        title: expression
+        type: knowledge-retrieval
+      height: 90
+      id: '1757962654081'
+      position:
+        x: 636
+        y: 686
+      positionAbsolute:
+        x: 636
+        y: 686
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: cf25ef06-2411-4d2a-a02d-459db82d2c9d
+            name: isbn
+            value: '{{#1757951901256.ISBN#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '17579625350610'
+        - escenario
+        retrieval_mode: multiple
+        selected: false
+        title: scenario
+        type: knowledge-retrieval
+      height: 90
+      id: '1757962707218'
+      position:
+        x: 636
+        y: 816
+      positionAbsolute:
+        x: 636
+        y: 816
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "def _to_text(x) -> str:\r\n    if x is None:\r\n        return \"\"\
+          \r\n    if isinstance(x, str):\r\n        return x\r\n    if isinstance(x,\
+          \ dict):\r\n        for k in (\"text\", \"content\", \"output\", \"answer\"\
+          , \"value\"):\r\n            if k in x and isinstance(x[k], str):\r\n  \
+          \              return x[k]\r\n        try:\r\n            return x[\"choices\"\
+          ][0][\"message\"][\"content\"]\r\n        except Exception:\r\n        \
+          \    pass\r\n        return str(x)\r\n    if isinstance(x, (list, tuple)):\r\
+          \n        return \"\\n\".join(_to_text(i) for i in x)\r\n    return str(x)\r\
+          \n\r\ndef main(fisico_response, vestimenta_response, marcas_response, expresion_response,\
+          \ escenario_response) -> dict:\r\n    return {\r\n        \"fisico\":  \
+          \   _to_text(fisico_response).strip(),\r\n        \"vestimenta\": _to_text(vestimenta_response).strip(),\r\
+          \n        \"marcas\":     _to_text(marcas_response).strip(),\r\n       \
+          \ \"expresion\":  _to_text(expresion_response).strip(),\r\n        \"escenario\"\
+          :  _to_text(escenario_response).strip(),\r\n    }\r\n"
+        code_language: python3
+        desc: ''
+        outputs:
+          escenario:
+            children: null
+            type: string
+          expresion:
+            children: null
+            type: string
+          fisico:
+            children: null
+            type: string
+          marcas:
+            children: null
+            type: string
+          vestimenta:
+            children: null
+            type: string
+        retry_config:
+          max_retries: 3
+          retry_enabled: false
+          retry_interval: 1000
+        selected: false
+        title: Combinacion de contexto
+        type: code
+        variables:
+        - value_selector:
+          - '1757962707218'
+          - result
+          value_type: array[object]
+          variable: escenario_response
+        - value_selector:
+          - '1757962654081'
+          - result
+          value_type: array[object]
+          variable: expresion_response
+        - value_selector:
+          - '1757962617610'
+          - result
+          value_type: array[object]
+          variable: marcas_response
+        - value_selector:
+          - '1757962587871'
+          - result
+          value_type: array[object]
+          variable: vestimenta_response
+        - value_selector:
+          - '1757962567038'
+          - result
+          value_type: array[object]
+          variable: fisico_response
+      height: 52
+      id: '17579633570970'
+      position:
+        x: 939
+        y: 556
+      positionAbsolute:
+        x: 939
+        y: 556
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-r1:14b
+          provider: langgenius/ollama/ollama
+        prompt_template:
+        - id: 1942c357-73bd-4f41-91aa-edc595c69787
+          role: system
+          text: 'You are a concept-art prompt crafter.
+
+
+            EVIDENCE (RAG results; use ONLY these facts, do not invent):
+
+            - fisico: {{#17579633570970.fisico#}}
+
+            - vestimenta: {{#17579633570970.vestimenta#}}
+
+            - marcas: {{#17579633570970.marcas#}}
+
+            - expresion: {{#17579633570970.expresion#}}
+
+            - escenario: {{#17579633570970.escenario#}}
+
+
+            GOAL
+
+            From your knowledge of the book "{{#1757951901256.book_title#}}" by {{#1757951901256.author#}}
+            and the character "{{#1757951901256.character#}}", plus the EVIDENCE above,
+            output ONE SINGLE LINE describing a base portrait prompt for an image
+            generator.
+
+
+            STRICT OUTPUT FORMAT
+
+            - Output ONLY one line, no quotes, no extra text.
+
+            - Descriptors are comma-separated; words inside each descriptor are joined
+            by underscores.
+
+            - Allowed characters: A–Z a–z 0–9 _ , -
+
+            - Replace ALL spaces with underscores; ASCII only (strip diacritics);
+            no slashes or periods.
+
+            - Start with the character name (underscored), then IMMEDIATELY one of:
+            male OR female, then the rest.
+
+            - No trailing comma; no duplicate commas; avoid repeated descriptors.
+
+            - **Length target:** 55–70 descriptors (minimum 45). If shorter, keep
+            appending specific, non-redundant descriptors until at least 45.
+
+
+            CONTENT ORDER (map EVIDENCE → descriptors; be specific and conservative
+            if uncertain)
+
+            1) **gender** (derive from EVIDENCE; if ambiguous, infer from pronouns/titles;
+            never output “unknown”): male OR female
+
+            2) **Core identity/build/posture/age** ← from *fisico*: height_or_build,
+            posture, age_range_at_story_start
+
+            3) **Facial structure & skin** ← from *fisico*: face_shape, jawline, cheekbones,
+            nose_shape, mouth_shape, eyebrows_shape, skin_tone, complexion_details
+            (freckles,_moles,_wrinkles_if_applicable)
+
+            4) **Hair & eyes** ← from *fisico*: hair_color,_style,_length,_texture;
+            eye_color,_shape,_gaze/emotion
+
+            5) **Distinctive marks** ← from *marcas*: scars,_birthmarks,_tattoos_if_canonical
+
+            6) **Wardrobe (genre-appropriate)** ← from *vestimenta*: base_outfit,_layers,_fabrics,_fastenings,_trims,_colors
+            (avoid brands/celebrities; use lore-appropriate generics)
+
+            7) **Insignia/props (non-spoilery)** ← from *vestimenta*/*marcas* if applicable:
+            emblem,_crest,_jewelry,_belt,_weapon_or_tool_if_canonical
+
+            8) **Expression & mood** ← from *expresion*: neutral_to_slight_characteristic_expression,_gaze_quality
+
+            9) **Composition** (portrait-friendly; default unless EVIDENCE dictates
+            otherwise) ← from *escenario* only as subtle hint: head_and_shoulders_or_mid-shot,_portrait_orientation,_subject_centered,_eyes_in_focus,_neutral_or_subtle_background,_minimal_environmental_hint_from_escenario
+
+            10) **Camera/technical (ASCII-friendly)**: 50mm_lens,_f2_8,_filmic_depth_of_field
+
+            11) **Lighting & mood tuned to {{#1757951901256.genre#}}**: soft_dramatic_lighting_or_low_key_or_cool_rim_light,_color_palette_hint
+
+            12) **Style & quality (no living-artist names)**: cinematic_realism,_high-detail_realism,_physically_based_shading,_clean_background,_subtle_fantasy_or_period_or_noir_cues_as_applicable
+
+
+            RULES
+
+            - Use ONLY facts supported by EVIDENCE; if a detail is not present, omit
+            it or choose a neutral, non-committal variant.
+
+            - If EVIDENCE conflicts, prefer the most consistent, non-spoilery elements.
+
+            - Convert any verbs in EVIDENCE into visual descriptors (nouns/adjectives).
+
+            - Do NOT reveal events beyond early canonical descriptions.
+
+
+            VALIDATION PASS (before returning)
+
+            - ZERO spaces; ASCII only; begins with "{{#1757951901256.character#}},"
+            then male/female; at least 45 descriptors.
+
+            - No duplicated descriptors; no trailing comma.
+
+
+            FORMAT EXAMPLE (style only; do NOT copy content):
+
+            Name,_male,_tall_and_broad-shouldered,_upright_commanding_posture,_early_middle-age,_strong_bone_structure,_square_jawline,_defined_cheekbones,_straight_nose,_firm_mouth,_thick_eyebrows,_lightly_weathered_complexion,_olive_skin_tone,_short_dark_hair_with_subtle_grey,_neatly_trimmed,_steel-gray_eyes,_steady_authoritative_gaze,_faint_battle_scars_on_cheek_and_brow,_formal_military_attire,_high-collared_tunic,_deep_navy_fabric,_silver_trim,_subtle_house_emblem,_polished_buttons,_waist_sash_darker_blue,_leather_belt_with_scabbard,_utilitarian_long_sword,_clean_knee-high_leather_boots,_leather_gloves_worn_or_held,_portrait_orientation,_head_and_shoulders,_eyes_in_critical_focus,_neutral_gradient_background,_50mm_lens,_f2_8,_filmic_depth_of_field,_soft_dramatic_lighting,_cinematic_realism,_high-detail_realism,_physically_based_shading,_textured_fabrics,_restrained_color_palette,_subtle_fantasy_elements
+
+            '
+        selected: false
+        title: Image-Gen Prompt
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 88
+      id: '17579633848270'
+      position:
+        x: 1242
+        y: 556
+      positionAbsolute:
+        x: 1242
+        y: 556
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-r1:14b
+          provider: langgenius/ollama/ollama
+        prompt_template:
+        - id: 4a4aa9ec-9c62-4b54-90c3-eb31a65964d8
+          role: system
+          text: 'You are a literary analyst specialized in turning retrieved evidence
+            into vivid, spoiler-safe character descriptions.
+
+
+            EVIDENCE (use ONLY these facts, do not invent):
+
+            - fisico: {{#17579633570970.fisico#}}
+
+            - vestimenta: {{#17579633570970.vestimenta#}}
+
+            - marcas: {{#17579633570970.marcas#}}
+
+            - expresion: {{#17579633570970.expresion#}}
+
+            - escenario: {{#17579633570970.escenario#}}
+
+
+            CONTEXT
+
+            - Book: "{{#1757951901256.book_title#}}" by {{#1757951901256.author#}}
+
+            - Character: {{#1757951901256.character#}}
+
+            - Genre: {{#1757951901256.genre#}}
+
+            - Language for output: Spanish
+
+            - The name of the character is in spanish, so it might change in the context
+            you have available.
+
+
+            GOAL
+
+            Write a cohesive, human-readable description of the character that combines
+            physical appearance and habitual attitudes/behaviors, grounded ONLY in
+            the EVIDENCE above. The result should help an artist or designer understand
+            who the character is at a glance—both how they look and how they carry
+            themselves.
+
+
+            OUTPUT SPEC
+
+            - Produce ONE paragraph in SPANISH.
+
+            - Length target: 140–220 words (if evidence is rich, aim for ~180 words).
+
+            - Third person, neutral-informative tone (no dialogue, no quotes).
+
+            - Open with the character’s full name and explicit gender (male/female)
+            inferred from evidence; if ambiguous, choose the most consistent option
+            and keep wording conservative.
+
+            - Cover, in a natural flow (do not list as bullets): body/build/posture/age
+            impression; face structure and skin; hair and eyes; distinctive marks/scars;
+            typical clothing and insignia; habitual expression/mood/attitude; subtle
+            setting cues that inform status or role (only if helpful and portrait-compatible).
+
+            - No spoilers beyond what is implied by EVIDENCE; omit unsubstantiated
+            details.
+
+            - Do NOT copy sentences verbatim from EVIDENCE; synthesize and paraphrase.
+
+            - No markdown, no headings, no lists—plain prose only.
+
+
+            QUALITY GUARDRAILS
+
+            - If EVIDENCE conflicts, prefer the most consistent, non-contradictory
+            elements.
+
+            - If a detail is missing, either omit it or phrase it cautiously (e.g.,
+            “tiende a…”, “suele mostrar…” / “tends to…”).
+
+            - Keep terminology era/setting-appropriate (align clothing terms with
+            genre), but avoid brands or real-world celebrity references.
+
+
+            VALIDATION (mentally check before returning)
+
+            - Single paragraph; 140–220 words; third person; starts with name + gender;
+            no spoilers; uses only EVIDENCE.
+
+            '
+        selected: false
+        title: Character Desc
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 88
+      id: '1758115825820'
+      position:
+        x: 1242
+        y: 684
+      positionAbsolute:
+        x: 1242
+        y: 684
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "import re\n\ndef _clean_think(text: str) -> str:\n    if not isinstance(text,\
+          \ str):\n        text = \"\" if text is None else str(text)\n    # Quita\
+          \ todo el bloque <think>...</think> (case-insensitive, multilínea)\n   \
+          \ cleaned = re.sub(r\"(?is)<think>.*?</think>\", \"\", text)\n    return\
+          \ cleaned.strip()\n\ndef main(prompt: str, desc: str) -> dict:\n    prompt_clean\
+          \ = _clean_think(prompt)\n    desc_clean   = _clean_think(desc)\n\n    #\
+          \ \"result\" es un objeto (dict), así Dify lo serializa como JSON\n    return\
+          \ {\n        \"result\": {\n            \"prompt\": prompt_clean,\n    \
+          \        \"desc\": desc_clean\n        }\n    }\n"
+        code_language: python3
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: object
+        selected: false
+        title: Parseo
+        type: code
+        variables:
+        - value_selector:
+          - '17579633848270'
+          - text
+          value_type: string
+          variable: prompt
+        - value_selector:
+          - '1758115825820'
+          - text
+          value_type: string
+          variable: desc
+      height: 52
+      id: '1761949640537'
+      position:
+        x: 1545
+        y: 556
+      positionAbsolute:
+        x: 1545
+        y: 556
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1761949640537'
+          - result
+          value_type: object
+          variable: result
+        selected: false
+        title: Fin
+        type: end
+      height: 89
+      id: '1761949761369'
+      position:
+        x: 1848
+        y: 556
+      positionAbsolute:
+        x: 1848
+        y: 556
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: 127.52544798854194
+      y: 47.66272957960001
+      zoom: 0.606411518343129

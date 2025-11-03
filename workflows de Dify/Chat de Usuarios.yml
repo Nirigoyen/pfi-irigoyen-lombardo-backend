@@ -1,0 +1,251 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: Chat de Usuarios
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/ollama:0.0.7@8fc496b3892344da47db6125c76fc0dbfd8020753f198032751d83f561d9443e
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: llm-answer
+      source: llm
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1760134073101-source-1760134089338-target
+      source: '1760134073101'
+      sourceHandle: source
+      target: '1760134089338'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1760134089338-source-llm-target
+      source: '1760134089338'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Inicio
+        type: start
+        variables:
+        - label: ISBN
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: ISBN
+        - label: PorcentajeLeido
+          max_length: 48
+          options: []
+          required: true
+          type: number
+          variable: PorcentajeLeido
+      height: 114
+      id: '1760134073101'
+      position:
+        x: 30
+        y: 257
+      positionAbsolute:
+        x: 30
+        y: 257
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1760134089338'
+          - result
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: llama3.2:3b
+          provider: langgenius/ollama/ollama
+        prompt_template:
+        - id: 6beaf1d6-9655-4a7f-95bb-448e467bf098
+          role: system
+          text: 'Sos un asistente de lectura, tenes el libro en el contexto que te
+            doy a continuacion. Responde como un asistente. No menciones el contexto
+            ni que sos un asistente, responde de manera amable para ayudar a la persona.
+
+
+            Contexto:
+
+            {{#context#}}'
+        selected: false
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 88
+      id: llm
+      position:
+        x: 636
+        y: 257
+      positionAbsolute:
+        x: 636
+        y: 257
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        answer: '{{#llm.text#}}'
+        desc: ''
+        selected: false
+        title: Respuesta
+        type: answer
+        variables: []
+      height: 103
+      id: answer
+      position:
+        x: 939
+        y: 257
+      positionAbsolute:
+        x: 939
+        y: 257
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: cdb59b3d-d183-4596-997a-751c862b8525
+            name: isbn
+            value: '{{#1760134073101.ISBN#}}'
+          - comparison_operator: ≤
+            id: c195be89-0b6a-4052-80f2-62afdd164918
+            name: leido
+            value: '{{#1760134073101.PorcentajeLeido#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '1760134073101'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        title: Recuperación de conocimiento
+        type: knowledge-retrieval
+      height: 90
+      id: '1760134089338'
+      position:
+        x: 333
+        y: 257
+      positionAbsolute:
+        x: 333
+        y: 257
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: 204.6500000000002
+      y: 267.05
+      zoom: 0.7

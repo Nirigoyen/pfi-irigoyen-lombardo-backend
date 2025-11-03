@@ -1,0 +1,811 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: Creacion de Imágenes 360°
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/ollama:0.0.7@8fc496b3892344da47db6125c76fc0dbfd8020753f198032751d83f561d9443e
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: code
+      id: 1757951901256-source-17579625350610-target
+      selected: false
+      source: '1757951901256'
+      sourceHandle: source
+      target: '17579625350610'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 17579625350610-source-1757962587871-target
+      selected: false
+      source: '17579625350610'
+      sourceHandle: source
+      target: '1757962587871'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 17579625350610-source-1757962617610-target
+      selected: false
+      source: '17579625350610'
+      sourceHandle: source
+      target: '1757962617610'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 17579625350610-source-1757962654081-target
+      selected: false
+      source: '17579625350610'
+      sourceHandle: source
+      target: '1757962654081'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 17579625350610-source-1757962707218-target
+      selected: false
+      source: '17579625350610'
+      sourceHandle: source
+      target: '1757962707218'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: code
+      id: 1757962587871-source-17579633570970-target
+      selected: false
+      source: '1757962587871'
+      sourceHandle: source
+      target: '17579633570970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: code
+      id: 1757962617610-source-17579633570970-target
+      selected: false
+      source: '1757962617610'
+      sourceHandle: source
+      target: '17579633570970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: code
+      id: 1757962654081-source-17579633570970-target
+      selected: false
+      source: '1757962654081'
+      sourceHandle: source
+      target: '17579633570970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: code
+      id: 1757962707218-source-17579633570970-target
+      selected: false
+      source: '1757962707218'
+      sourceHandle: source
+      target: '17579633570970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 17579633570970-source-17579633848270-target
+      selected: false
+      source: '17579633570970'
+      sourceHandle: source
+      target: '17579633848270'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: code
+      id: 17610114599270-source-17579633570970-target
+      selected: false
+      source: '17610114599270'
+      sourceHandle: source
+      target: '17579633570970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: code
+      id: 17610114719440-source-17579633570970-target
+      selected: false
+      source: '17610114719440'
+      sourceHandle: source
+      target: '17579633570970'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 17579625350610-source-17610114599270-target
+      selected: false
+      source: '17579625350610'
+      sourceHandle: source
+      target: '17610114599270'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 17579625350610-source-17610114719440-target
+      selected: false
+      source: '17579625350610'
+      sourceHandle: source
+      target: '17610114719440'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 17579633848270-source-1761012861350-target
+      source: '17579633848270'
+      sourceHandle: source
+      target: '1761012861350'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Inicio
+        type: start
+        variables:
+        - default: Frank Baum
+          label: author
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: author
+        - default: El maravilloso Mago de Oz
+          label: book_title
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: book_title
+        - default: '9788435034821'
+          label: ISBN
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: ISBN
+        - default: El camino Amarillo
+          label: character
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: location
+      height: 166
+      id: '1757951901256'
+      position:
+        x: 30
+        y: 296.5
+      positionAbsolute:
+        x: 30
+        y: 296.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "def main(lugar: str) -> dict:\r\n    geografia  = f\"¿Cómo es la geografía\
+          \ y el terreno de {lugar} (relieve, agua, vegetación, suelo, amplitud/estrechez)?\"\
+          \r\n    elementos  = f\"¿Qué elementos arquitectónicos o estructuras distinguen\
+          \ a {lugar} (materiales, estilos, formas, alturas)?\"\r\n    landmarks \
+          \ = f\"¿Qué hitos o landmarks visibles se mencionan en {lugar} (plaza, torre,\
+          \ muralla, estatua, puente, montaña, templo)?\"\r\n    era        = f\"\
+          ¿Qué época, estilo o rasgos culturales se reflejan en {lugar} (medieval,\
+          \ futurista, colonial, nórdico, etc.)?\"\r\n    atmosfera  = f\"¿Cómo se\
+          \ describe la iluminación y el ambiente en {lugar} (contraste, sombras,\
+          \ neblina, partículas, humo, claridad)?\"\r\n    escala     = f\"¿Cuál es\
+          \ la escala y disposición de {lugar} (amplitud, calles/pasillos, plazas,\
+          \ capas de profundidad, vistas panorámicas)?\"\r\n\r\n    return {\r\n \
+          \       \"geografia\":  geografia,\r\n        \"elementos\":  elementos,\r\
+          \n        \"landmarks\":  landmarks,\r\n        \"era\":        era,\r\n\
+          \        \"atmosfera\":  atmosfera,\r\n        \"escala\":     escala,\r\
+          \n    }"
+        code_language: python3
+        desc: ''
+        outputs:
+          atmosfera:
+            children: null
+            type: string
+          elementos:
+            children: null
+            type: string
+          era:
+            children: null
+            type: string
+          escala:
+            children: null
+            type: string
+          geografia:
+            children: null
+            type: string
+          landmarks:
+            children: null
+            type: string
+        retry_config:
+          max_retries: 3
+          retry_enabled: false
+          retry_interval: 1000
+        selected: false
+        title: Código (1)
+        type: code
+        variables:
+        - value_selector:
+          - '1757951901256'
+          - location
+          value_type: string
+          variable: lugar
+      height: 52
+      id: '17579625350610'
+      position:
+        x: 333
+        y: 296.5
+      positionAbsolute:
+        x: 333
+        y: 296.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: d523db15-30d1-4986-bb19-8de475fae8c4
+            name: isbn
+            value: '{{#1757951901256.ISBN#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: weighted_score
+          reranking_model:
+            model: ''
+            provider: ''
+          score_threshold: null
+          top_k: 6
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '17579625350610'
+        - geografia
+        retrieval_mode: multiple
+        selected: false
+        title: geography
+        type: knowledge-retrieval
+      height: 90
+      id: '1757962587871'
+      position:
+        x: 636
+        y: 296.5
+      positionAbsolute:
+        x: 636
+        y: 296.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: ad5610a3-bddb-4bc9-a0db-751f42d0884b
+            name: isbn
+            value: '{{#1757951901256.ISBN#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '17579625350610'
+        - elementos
+        retrieval_mode: multiple
+        selected: false
+        title: architecture_elements
+        type: knowledge-retrieval
+      height: 90
+      id: '1757962617610'
+      position:
+        x: 636
+        y: 427.5
+      positionAbsolute:
+        x: 636
+        y: 427.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: 104346e2-812e-4aa4-b9b7-c7bde72eac2f
+            name: isbn
+            value: '{{#1757951901256.ISBN#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '17579625350610'
+        - landmarks
+        retrieval_mode: multiple
+        selected: false
+        title: landmarks
+        type: knowledge-retrieval
+      height: 90
+      id: '1757962654081'
+      position:
+        x: 636
+        y: 558.5
+      positionAbsolute:
+        x: 636
+        y: 558.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: d82418a8-9f16-46a4-8dbe-94e961411e16
+            name: isbn
+            value: '{{#1757951901256.ISBN#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '17579625350610'
+        - era
+        retrieval_mode: multiple
+        selected: false
+        title: era_style_culture
+        type: knowledge-retrieval
+      height: 90
+      id: '1757962707218'
+      position:
+        x: 636
+        y: 689.5
+      positionAbsolute:
+        x: 636
+        y: 689.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        code: "def _to_text(x) -> str:\r\n    if x is None:\r\n        return \"\"\
+          \r\n    if isinstance(x, str):\r\n        return x\r\n    # Formatos típicos\
+          \ en Dify/LLM tools\r\n    if isinstance(x, dict):\r\n        for k in (\"\
+          text\", \"content\", \"output\", \"answer\"):\r\n            if k in x and\
+          \ isinstance(x[k], str):\r\n                return x[k]\r\n        # OpenAI-like\r\
+          \n        try:\r\n            return x[\"choices\"][0][\"message\"][\"content\"\
+          ]\r\n        except Exception:\r\n            pass\r\n        # Último recurso:\
+          \ todo el dict a str\r\n        return str(x)\r\n    if isinstance(x, (list,\
+          \ tuple)):\r\n        # Une items convirtiéndolos a str\r\n        return\
+          \ \"\\n\".join(_to_text(i) for i in x)\r\n    return str(x)\r\n\r\ndef main(geography_response,\
+          \ elements_response, landmarks_response, era_response, atmosphere_response,\
+          \ scale_response) -> dict:\r\n    geography  = _to_text(geography_response).strip()\r\
+          \n    elements   = _to_text(elements_response).strip()\r\n    landmarks\
+          \  = _to_text(landmarks_response).strip()\r\n    era        = _to_text(era_response).strip()\r\
+          \n    atmosphere = _to_text(atmosphere_response).strip()\r\n    scale  \
+          \    = _to_text(scale_response).strip()\r\n\r\n    # Valida que atmosphere\
+          \ sea string no vacío si tu esquema lo requiere\r\n    if not isinstance(atmosphere,\
+          \ str):\r\n        raise ValueError(\"atmosphere must be a string\")\r\n\
+          \    # (Opcional) forzá un placeholder si llega vacío\r\n    # atmosphere\
+          \ = atmosphere or \"(no atmosphere provided)\"\r\n\r\n    return {\r\n \
+          \       \"geography\":  geography,\r\n        \"elements\":   elements,\r\
+          \n        \"landmarks\":  landmarks,\r\n        \"era\":        era,\r\n\
+          \        \"atmosphere\": atmosphere,\r\n        \"scale\":      scale,\r\
+          \n    }\r\n"
+        code_language: python3
+        desc: ''
+        outputs:
+          atmosphere:
+            children: null
+            type: string
+          elements:
+            children: null
+            type: string
+          era:
+            children: null
+            type: string
+          geography:
+            children: null
+            type: string
+          landmarks:
+            children: null
+            type: string
+          scale:
+            children: null
+            type: string
+        retry_config:
+          max_retries: 3
+          retry_enabled: false
+          retry_interval: 1000
+        selected: false
+        title: Código (2)
+        type: code
+        variables:
+        - value_selector:
+          - '1757962587871'
+          - result
+          value_type: array[object]
+          variable: geography_response
+        - value_selector:
+          - '1757962617610'
+          - result
+          value_type: array[object]
+          variable: elements_response
+        - value_selector:
+          - '1757962654081'
+          - result
+          value_type: array[object]
+          variable: landmarks_response
+        - value_selector:
+          - '1757962707218'
+          - result
+          value_type: array[object]
+          variable: era_response
+        - value_selector:
+          - '17610114599270'
+          - result
+          value_type: array[object]
+          variable: atmosphere_response
+        - value_selector:
+          - '17610114719440'
+          - result
+          value_type: array[object]
+          variable: scale_response
+      height: 52
+      id: '17579633570970'
+      position:
+        x: 939
+        y: 558.5
+      positionAbsolute:
+        x: 939
+        y: 558.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-r1:14b
+          provider: langgenius/ollama/ollama
+        prompt_template:
+        - id: 1942c357-73bd-4f41-91aa-edc595c69787
+          role: system
+          text: "You are an environment concept prompt crafter for 360-degree scenes.\n\
+            \nEVIDENCE (use ONLY these facts; do not invent):\n- location_name: {{#1757951901256.location#}}\n\
+            - geography_terrain: {{#17579633570970.geography#}}\n- architecture_elements:\
+            \ {{#17579633570970.elements#}}\n- landmarks_points_of_interest: {{#17579633570970.landmarks#}}\n\
+            - era_style_culture: {{#17579633570970.era#}}\n- lighting_mood_atmosphere:\
+            \ {{#17579633570970.atmosphere#}}\n- scale_layout: {{#17579633570970.scale#}}\n\
+            \nGOAL\nFrom your knowledge of the book \"{{#1757951901256.book_title#}}\"\
+            \ by {{#1757951901256.author#}}, plus the EVIDENCE above, produce two\
+            \ concise lines in ENGLISH for a 360° image generator:\n1) PROMPT_360:\
+            \ ≤500 characters, as close to 500 as posible. Highly visual, comma-separated\
+            \ descriptors, natural language, exclude 360 context (e.g., \"360-degree\
+            \ equirectangular panorama\"), keep horizon level, seamless surroundings.\n\
+            2) NEGATIVE: ≤350 characters. Concise list of things to avoid.\n\nRULES\n\
+            - Use ONLY EVIDENCE. If something is missing, omit it.\n- No spoilers.\
+            \ No brand names or living artists.\n- Prefer nouns/adjectives over verbs.\
+            \ Avoid redundant fillers.\n- Focus on spatial continuity (foreground–midground–background),\
+            \ key landmarks, lighting, palette, and mood.\n- Do not depict or mention\
+            \ any character from the world, you should focus only on the space the\
+            \ story happens in.\n- Do not make any \"Meta reference\" such as \"360\
+            \ image\", \"UltraHD\" or \"20th-century American Folk Art scene\", focus\
+            \ only on the world you ar depicting.\n\nOUTPUT FORMAT (exactly like this\
+            \ in JSON format):\n{\n   prompt: <your single line ≤500 chars>,\n   negative:\
+            \ <your single line ≤350 chars>\n}\n\nCONTENT HINTS FOR PROMPT_360\n-\
+            \ Start with the place + era/style vibe.\n- Geography/terrain + architecture\
+            \ + 1–2 landmarks.\n- Time of day & weather; lighting cues; color palette\
+            \ & materials.\n- Image related things, such as HD, good quality, etc.\n\
+            - Optionally note activity level if present (quiet_deserted / bustling_market),\
+            \ but keep people generic unless EVIDENCE specifies.\n\nNEGATIVE BASELINE\
+            \ (adapt and trim to ≤350)\n- Avoid: text, watermarks, logos, UI, borders,\
+            \ low-res, heavy blur, banding, extreme fisheye, tilted horizon, seams,\
+            \ duplicated elements, wrong era/style, cluttered signage, crowds if not\
+            \ in evidence, vehicles/weapons if not in evidence, overexposure, oversaturation,\
+            \ posterization.\n"
+        selected: false
+        title: Image-Gen Prompt
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 88
+      id: '17579633848270'
+      position:
+        x: 1242
+        y: 558.5
+      positionAbsolute:
+        x: 1242
+        y: 558.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: 8f469c5f-cf08-4513-a792-e2683c5f332e
+            name: isbn
+            value: '{{#1757951901256.ISBN#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '17579625350610'
+        - atmosfera
+        retrieval_mode: multiple
+        selected: false
+        title: lighting_mood_atmosphere
+        type: knowledge-retrieval
+      height: 90
+      id: '17610114599270'
+      position:
+        x: 636
+        y: 820.5
+      positionAbsolute:
+        x: 636
+        y: 820.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - vH4pXx1HHEMc3z5mHTdzecSYHYaT3qbKNapRweGEmp6VwMUcHzXJEcJiamgd3ZMt
+        desc: ''
+        metadata_filtering_conditions:
+          conditions:
+          - comparison_operator: is
+            id: 7e38e406-2ede-45f9-b987-97541cf179bc
+            name: isbn
+            value: '{{#1757951901256.ISBN#}}'
+          logical_operator: and
+        metadata_filtering_mode: manual
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0.3
+            vector_setting:
+              embedding_model_name: bge-m3:latest
+              embedding_provider_name: langgenius/ollama/ollama
+              vector_weight: 0.7
+        query_variable_selector:
+        - '17579625350610'
+        - escala
+        retrieval_mode: multiple
+        selected: false
+        title: scale_layout
+        type: knowledge-retrieval
+      height: 90
+      id: '17610114719440'
+      position:
+        x: 636
+        y: 951.5
+      positionAbsolute:
+        x: 636
+        y: 951.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '17579633848270'
+          - text
+          value_type: string
+          variable: output
+        selected: true
+        title: Fin
+        type: end
+      height: 89
+      id: '1761012861350'
+      position:
+        x: 1545
+        y: 558.5
+      positionAbsolute:
+        x: 1545
+        y: 558.5
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: 111.65190636569741
+      y: 102.08286800991038
+      zoom: 0.49405826200678216
