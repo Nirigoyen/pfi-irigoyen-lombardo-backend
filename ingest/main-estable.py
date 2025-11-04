@@ -16,6 +16,9 @@ Ejecutar:
 """
 from __future__ import annotations
 
+import json
+import ssl
+import pika
 import html
 import io
 import os
@@ -28,7 +31,7 @@ import requests
 from fastapi import Body, FastAPI, HTTPException, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 
-# ============== DB helpers (tuyos) ==============
+# ============== DB helpers ==============
 # Importa funciones principales y, si faltan get_book_info / búsqueda por título,
 # se proveen fallbacks locales con psycopg.
 try:
@@ -157,13 +160,13 @@ def db_search_books_by_title(title: str, limit: int = 5) -> List[dict]:
     return local_db_search_books_by_title(title, limit)
 
 
-# ============== LibraryThing (tus helpers) ==============
+# ============== LibraryThing ==============
 try:
     from lt_client import try_get_characters_and_places
 except Exception:
     from lt_client import try_get_characters_and_places
 
-# ============== OBS (tus helpers) ==============
+# ============== OBS ==============
 try:
     from obs_client import upload_bytes
 except Exception:
@@ -591,7 +594,7 @@ def translate_text(text: str, source_lang: Optional[str], target_lang: str = "es
 
 
 # =========================
-# Helpers de subjects (enriquecidos)
+# Helpers de subjects
 # =========================
 def openlibrary_search_works_docs_for_title(title: str, limit: int = 10) -> List[dict]:
     params = {"q": title, "fields": "key,subject,edition_count,first_publish_year", "limit": limit}
@@ -949,6 +952,108 @@ def aggregate_book_api(isbn: Optional[str], title: Optional[str], author: Option
     out.pop("genres_google_raw", None)
 
     return out, info
+
+# =========================
+# RabbitMQ 
+# =========================
+# ==== RabbitMQ helpers (Embeddings event) ====
+
+RABBIT_HOST = os.getenv("RABBIT_HOST")
+RABBIT_PORT = int(os.getenv("RABBIT_PORT", "5672"))
+RABBIT_USER = os.getenv("RABBIT_USER")
+RABBIT_PASS = os.getenv("RABBIT_PASS")
+RABBIT_VHOST = os.getenv("RABBIT_VHOST", "/")
+RABBIT_USE_TLS = os.getenv("RABBIT_USE_TLS", "false").lower() in ("1","true","yes")
+
+RABBIT_EXCHANGE = os.getenv("RABBIT_EXCHANGE", "gen.topic")
+RABBIT_RK_EMBEDDINGS = os.getenv("RABBIT_RK_EMBEDDINGS", "gen.embeddings")
+RABBIT_QUEUE_EMBEDDINGS = os.getenv("RABBIT_QUEUE_EMBEDDINGS", "gen_embeddings")
+
+def _rabbit_get_connection() -> Optional[pika.BlockingConnection]:
+    """Devuelve una conexión a RabbitMQ o None si falta config."""
+    if not (RABBIT_HOST and RABBIT_USER and RABBIT_PASS):
+        return None
+    creds = pika.PlainCredentials(RABBIT_USER, RABBIT_PASS)
+    if RABBIT_USE_TLS:
+        ctx = ssl.create_default_context()
+        # Si el CN no matchea (IP privada), podés habilitar para pruebas:
+        # ctx.check_hostname = False
+        # ctx.verify_mode = ssl.CERT_NONE
+        params = pika.ConnectionParameters(
+            host=RABBIT_HOST, port=RABBIT_PORT, virtual_host=RABBIT_VHOST,
+            credentials=creds,
+            ssl_options=pika.SSLOptions(ctx, server_hostname=RABBIT_HOST),
+            heartbeat=30, blocked_connection_timeout=60
+        )
+    else:
+        params = pika.ConnectionParameters(
+            host=RABBIT_HOST, port=RABBIT_PORT, virtual_host=RABBIT_VHOST,
+            credentials=creds,
+            heartbeat=30, blocked_connection_timeout=60
+        )
+    return pika.BlockingConnection(params)
+
+def _rabbit_bootstrap_topology(ch: pika.channel.Channel) -> None:
+    """Asegura exchange/queue/binding (idempotente)."""
+    ch.exchange_declare(RABBIT_EXCHANGE, exchange_type="topic", durable=True)
+    ch.queue_declare(RABBIT_QUEUE_EMBEDDINGS, durable=True, exclusive=False, auto_delete=False)
+    ch.queue_bind(RABBIT_QUEUE_EMBEDDINGS, RABBIT_EXCHANGE, RABBIT_RK_EMBEDDINGS)
+
+def _to_obj_list(names: List[Any]) -> List[dict]:
+    """Convierte ['Ana','Bruno'] -> [{'id':1,'nombre':'Ana'},{'id':2,'nombre':'Bruno'}]."""
+    out = []
+    for i, n in enumerate(names or []):
+        try:
+            # si ya viene como objeto {'id':..,'nombre':..}, lo respeto
+            if isinstance(n, dict) and "nombre" in n:
+                out.append({"id": int(n.get("id") or i+1), "nombre": str(n.get("nombre") or "").strip()})
+            else:
+                out.append({"id": i+1, "nombre": str(n)})
+        except Exception:
+            pass
+    return out
+
+def publish_embeddings_event(isbn: str, autor:str, genero:str, titulo:str, personajes: List[Any], lugares: List[Any], url_libro: Optional[str]) -> dict:
+    result = {"ok": False, "reason": None}
+    try:
+        conn = _rabbit_get_connection()
+        if conn is None:
+            result["reason"] = "rabbit_not_configured"
+            return result
+        try:
+            ch = conn.channel()
+            _rabbit_bootstrap_topology(ch)
+
+            payload = {
+                "url_libro": url_libro,
+                "titulo": titulo,
+                "isbn": isbn,
+                "autor": autor,
+                "genero": genero,
+                "personajes": _to_obj_list(personajes),
+                "lugares": _to_obj_list(lugares),
+            }
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            props = pika.BasicProperties(
+                content_type="application/json",
+                delivery_mode=2  # persistente
+            )
+            ch.basic_publish(
+                exchange=RABBIT_EXCHANGE,
+                routing_key=RABBIT_RK_EMBEDDINGS,
+                body=body,
+                properties=props
+            )
+            result["ok"] = True
+            return result
+        finally:
+            try:
+                conn.close()
+            except Exception:
+                pass
+    except Exception as e:
+        result["reason"] = f"{type(e).__name__}: {e}"
+        return result
 
 
 # =========================
@@ -1381,23 +1486,15 @@ async def ensure_book(
 
     # 2.d) Notificar API externa SOLO en ingesta
     pdf_url = f"{OBS_PUBLIC_BASE}/{final_isbn}/original.pdf" if pdf_key else None
-    external_payload = {
-        "pdf_url": pdf_url,
-        "isbn": final_isbn,
-        "characters": data.get("characters") or [],
-        "places": data.get("places") or [],
-    }
-    external_ingest = {}
-    try:
-        r = requests.post(EXTERNAL_INGEST_URL, json=external_payload, timeout=20)
-        external_ingest = {
-            "ok": (200 <= r.status_code < 300),
-            "status_code": r.status_code,
-            "response_text": r.text[:2000],
-            "payload": external_payload,
-        }
-    except Exception as e:
-        external_ingest = {"ok": False, "error": f"{type(e).__name__}: {e}", "payload": external_payload}
+    rabbit_pub = publish_embeddings_event(
+        isbn=final_isbn,
+        titulo=data.get("title"),
+        autor=out_author,
+        genero=(data.get("genres") or [None])[0],
+        personajes=data.get("characters") or [],
+        lugares=data.get("places") or [],
+        url_libro=pdf_url
+    )
 
     # 2.e) Armar respuesta reducida
     out_author = None
@@ -1415,5 +1512,4 @@ async def ensure_book(
         "cover_key": cover_key,
         "source": "ingest",
         "info": info,
-        "external_ingest": external_ingest,
     }

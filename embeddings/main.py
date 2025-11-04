@@ -12,6 +12,10 @@ import httpx
 from fastapi import FastAPI, Form, HTTPException, BackgroundTasks  
 from fastapi.responses import JSONResponse
 from pypdf import PdfReader, PdfWriter
+import threading
+import traceback
+import pika
+import ssl
 
 # APScheduler (async)
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -23,6 +27,24 @@ from apscheduler.triggers.date import DateTrigger
 DIFY_BASE_URL = os.getenv("DIFY_BASE_URL", "http://110.238.68.181/v1").rstrip("/")
 DIFY_API_KEY = os.getenv("DIFY_API_KEY")  # puede ser dataset-xxxx o api key de workspace
 DATASET_ID = os.getenv("DATASET_ID")      # Knowledge/Dataset ID (estático)
+
+# ==== RabbitMQ ====
+RABBIT_HOST = os.getenv("RABBIT_HOST", "")
+RABBIT_PORT = int(os.getenv("RABBIT_PORT", "5672"))   # 5671 si TLS
+RABBIT_USER = os.getenv("RABBIT_USER", "")
+RABBIT_PASS = os.getenv("RABBIT_PASS", "")
+RABBIT_VHOST = os.getenv("RABBIT_VHOST", "/")
+RABBIT_USE_TLS = os.getenv("RABBIT_USE_TLS", "false").lower() in ("1","true","yes")
+
+RABBIT_EXCHANGE = os.getenv("RABBIT_EXCHANGE", "gen.topic")
+RABBIT_QUEUE_EMBEDDINGS = os.getenv("RABBIT_QUEUE_EMBEDDINGS", "gen_embeddings")
+RABBIT_RK_EMBEDDINGS = os.getenv("RABBIT_RK_EMBEDDINGS", "gen.embeddings")
+RABBIT_PREFETCH = int(os.getenv("RABBIT_PREFETCH", "4"))
+
+RABBIT_QUEUE_PROMPTS = os.getenv("RABBIT_QUEUE_PROMPTS", "gen_prompts")
+RABBIT_RK_PROMPTS_PERSONAJE = os.getenv("RABBIT_RK_PROMPTS_PERSONAJE", "gen.prompts.personaje")
+RABBIT_RK_PROMPTS_LUGAR     = os.getenv("RABBIT_RK_PROMPTS_LUGAR", "gen.prompts.lugar")
+
 
 # Ajustes de dataset
 DOC_FORM = "hierarchical_model" #os.getenv("DOC_FORM", "hierarchical_model")
@@ -234,9 +256,10 @@ async def post_metadata_batch(operation_data: Dict[str, Any]) -> Dict[str, Any]:
 # =======================
 # Scheduler: job
 # =======================
-async def metadata_job(operation_data: Dict[str, Any]) -> None:
+async def metadata_job(operation_data: Dict[str, Any], followup: Dict[str, Any] | None = None) -> None:
     """
     Job programado: envía metadata con backoff.
+    Si 'followup' viene con {'isbn', 'personajes', 'lugares'}, al terminar publica los prompts 1-a-1.
     """
     delay = 1.0
     last_err = None
@@ -244,7 +267,17 @@ async def metadata_job(operation_data: Dict[str, Any]) -> None:
         try:
             resp = await post_metadata_batch(operation_data)
             print(f"[scheduler][metadata] OK intento {attempt} -> {len(operation_data.get('operation_data', []))} items")
-            # Podrías loguear resp si querés
+
+            # Follow-up: publicar prompts
+            if followup and followup.get("isbn"):
+                await anyio.to_thread.run_sync(lambda: publish_prompts_for_entities(
+                    isbn=followup["isbn"],
+                    autor=followup.get("autor"),
+                    titulo=followup.get("titulo"),
+                    genero=followup.get("genero"),
+                    personajes=followup.get("personajes") or [],
+                    lugares=followup.get("lugares") or [],
+        ))
             return
         except Exception as e:
             last_err = str(e)
@@ -253,17 +286,259 @@ async def metadata_job(operation_data: Dict[str, Any]) -> None:
             delay *= METADATA_BACKOFF_BASE
     print(f"[scheduler][metadata] Falló tras {METADATA_MAX_RETRIES} intentos. Último error: {last_err}")
 
-
-def enqueue_metadata_job(operation_data: Dict[str, Any], delay_seconds: int) -> str:
+def enqueue_metadata_job(operation_data: Dict[str, Any], delay_seconds: int, followup: Dict[str, Any] | None = None) -> str:
     """
     Programa el job para dentro de 'delay_seconds'. Devuelve job_id.
+    Cuando el job se ejecute y la metadata se envíe OK, publicará eventos de prompts.
     """
-    # Usamos UTC para evitar problemas de TZ
     run_dt = datetime.now(timezone.utc) + timedelta(seconds=delay_seconds)
     trigger = DateTrigger(run_date=run_dt)
-    job = scheduler.add_job(metadata_job, trigger=trigger, args=[operation_data])
+    job = scheduler.add_job(metadata_job, trigger=trigger, args=[operation_data, followup])
     print(f"[scheduler] Job programado {job.id} para {run_dt.isoformat()}")
     return job.id
+
+async def process_embeddings_event_async(
+    pdf_url: str,
+    isbn: str,
+    personajes: List[Any],
+    lugares: List[Any],
+    author: str | None,         
+    genre: str | None,          
+    title: str | None = None,   
+    parts: int = 20,
+) -> Dict[str, Any]:
+    # 1) Descargar PDF
+    src_bytes = await download_pdf_bytes(pdf_url)
+
+    # 2) Partir en thread
+    pdf_chunks: List[Tuple[Tuple[int, int], bytes]] = await anyio.to_thread.run_sync(
+        _split_pdf_bytes_to_parts_sync, src_bytes, parts
+    )
+
+    # 3) Subir concurrente a Dify
+    headers = {"Authorization": f"Bearer {DIFY_API_KEY}"}
+    limits = httpx.Limits(max_connections=max(max(UPLOAD_CONCURRENCY, 2), len(pdf_chunks)),
+                          max_keepalive_connections=2, keepalive_expiry=30)
+    sem = asyncio.Semaphore(UPLOAD_CONCURRENCY)
+
+    async with httpx.AsyncClient(
+        timeout=httpx.Timeout(connect=30, read=180, write=180, pool=180),
+        headers=headers,
+        limits=limits,
+        http2=False,
+        trust_env=False
+    ) as client:
+
+        async def _task_pdf(idx: int, blob: bytes) -> Dict[str, Any]:
+            async with sem:
+                fname = f"{isbn}-{idx}.pdf"
+                return await upload_pdf_chunk_to_dify(client, filename_for_name=fname, file_bytes=blob)
+
+        tasks = [asyncio.create_task(_task_pdf(i + 1, blob)) for i, ((_, _), blob) in enumerate(pdf_chunks)]
+        uploads = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # 4) Resumen
+    results = []
+    for i, up in enumerate(uploads, start=1):
+        start_page, end_page = pdf_chunks[i - 1][0]
+        if isinstance(up, Exception):
+            results.append({
+                "part": i, "name": f"{isbn}-{i}",
+                "pages": {"from": start_page, "to": end_page},
+                "status": "error", "error": str(up),
+            })
+        else:
+            doc = up.get("document", {})
+            results.append({
+                "part": i, "name": f"{isbn}-{i}",
+                "pages": {"from": start_page, "to": end_page},
+                "status": "ok",
+                "document_id": doc.get("id"),
+                "indexing_status": doc.get("indexing_status"),
+                "doc_form": doc.get("doc_form"),
+            })
+
+    # 5) Metadata
+    operation_data = build_metadata_operation_data(isbn, pdf_chunks, uploads)
+
+    followup = {
+        "isbn": isbn,
+        "autor": author,     
+        "genero": genre,     
+        "titulo": title,     
+        "personajes": personajes,
+        "lugares": lugares,
+    }
+
+    job_info = None
+    if operation_data.get("operation_data"):
+        if SCHEDULE_METADATA_AFTER_UPLOAD:
+            job_id = enqueue_metadata_job(operation_data, METADATA_DELAY_SECONDS, followup=followup)
+            job_info = {"job_id": job_id, "delay_seconds": METADATA_DELAY_SECONDS,
+                        "items": len(operation_data["operation_data"])}
+        else:
+            await metadata_job(operation_data, followup=followup)
+
+    return {
+        "dataset_id": DATASET_ID,
+        "isbn": isbn,
+        "uploaded": results,
+        "metadata_operation_data": operation_data,
+        "metadata_job": job_info,
+    }
+
+# ========= RabbitMQ consumer: gen_embeddings =========
+
+def _mk_rabbit_params() -> Optional[pika.ConnectionParameters]:
+    if not (RABBIT_HOST and RABBIT_USER and RABBIT_PASS):
+        print("[rabbit] faltan variables de entorno para conectar, listener deshabilitado.")
+        return None
+    creds = pika.PlainCredentials(RABBIT_USER, RABBIT_PASS)
+    if RABBIT_USE_TLS:
+        ctx = ssl.create_default_context()
+        # Para pruebas con IP privada y cert CN distinto, descomentar bajo tu responsabilidad:
+        # ctx.check_hostname = False
+        # ctx.verify_mode = ssl.CERT_NONE
+        return pika.ConnectionParameters(
+            host=RABBIT_HOST, port=RABBIT_PORT, virtual_host=RABBIT_VHOST,
+            credentials=creds,
+            ssl_options=pika.SSLOptions(ctx, server_hostname=RABBIT_HOST),
+            heartbeat=30, blocked_connection_timeout=60
+        )
+    else:
+        return pika.ConnectionParameters(
+            host=RABBIT_HOST, port=RABBIT_PORT, virtual_host=RABBIT_VHOST,
+            credentials=creds, heartbeat=30, blocked_connection_timeout=60
+        )
+
+def start_rabbit_listener(loop: asyncio.AbstractEventLoop):
+    
+    params = _mk_rabbit_params()
+    if params is None:
+        return
+
+    def _run():
+        while True:
+            try:
+                conn = pika.BlockingConnection(params)
+                ch = conn.channel()
+
+                # Asegurar topología mínima (por si no existe)
+                ch.exchange_declare(RABBIT_EXCHANGE, exchange_type="topic", durable=True)
+                ch.queue_declare(RABBIT_QUEUE_EMBEDDINGS, durable=True, exclusive=False, auto_delete=False)
+                ch.queue_bind(RABBIT_QUEUE_EMBEDDINGS, RABBIT_EXCHANGE, RABBIT_RK_EMBEDDINGS)
+                ch.basic_qos(prefetch_count=RABBIT_PREFETCH)
+
+                print(f"[rabbit] Escuchando {RABBIT_QUEUE_EMBEDDINGS} (rk={RABBIT_RK_EMBEDDINGS})")
+
+                def _on_msg(chx, method, props, body: bytes):
+                    try:
+                        payload = json.loads(body.decode("utf-8"))
+                        pdf_url    = payload.get("url_libro")
+                        isbn       = payload.get("isbn")
+                        personajes = payload.get("personajes") or []
+                        lugares    = payload.get("lugares") or []
+                        author     = payload.get("autor") or payload.get("author")   
+                        genre      = payload.get("genero") or payload.get("genre")   
+                        title      = payload.get("titulo") or payload.get("title")   
+
+                        if not (isinstance(isbn, str) and isbn.strip()):
+                            raise ValueError("isbn faltante/ inválido")
+                        if not (isinstance(pdf_url, str) and pdf_url.lower().startswith(("http://", "https://"))):
+                            raise ValueError("url_libro faltante/ inválida")
+
+                        fut = asyncio.run_coroutine_threadsafe(
+                            process_embeddings_event_async(
+                                pdf_url=pdf_url,
+                                isbn=isbn,
+                                personajes=personajes,
+                                lugares=lugares,
+                                author=author,
+                                genre=genre,
+                                title=title,
+                                parts=20
+                            ),
+                            loop
+                        )
+                        chx.basic_ack(delivery_tag=method.delivery_tag)
+                    except Exception as e:
+                        print("[rabbit] Error al procesar mensaje:", e)
+                        traceback.print_exc()
+                        chx.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+                ch.basic_consume(queue=RABBIT_QUEUE_EMBEDDINGS, on_message_callback=_on_msg, auto_ack=False)
+                ch.start_consuming()
+            except Exception as e:
+                print(f"[rabbit] conexión/loop caído: {e}. Reintentando en 5s...")
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+                import time as _t
+                _t.sleep(5)
+
+    th = threading.Thread(target=_run, name="rabbit-listener", daemon=True)
+    th.start()
+    print("[rabbit] listener thread iniciado.")
+
+def _ensure_prompts_topology(ch: pika.channel.Channel) -> None:
+    ch.exchange_declare(RABBIT_EXCHANGE, exchange_type="topic", durable=True)
+    ch.queue_declare(RABBIT_QUEUE_PROMPTS, durable=True, exclusive=False, auto_delete=False)
+    ch.queue_bind(RABBIT_QUEUE_PROMPTS, RABBIT_EXCHANGE, "gen.prompts.*")
+
+def _normalize_entities(lst: List[Any]) -> List[dict]:
+    # Acepta [{'id':..,'nombre':..}] o ['Ana','Bruno'] → [{id:1,nombre:'Ana'},...]
+    out = []
+    for i, it in enumerate(lst or []):
+        if isinstance(it, dict) and "nombre" in it:
+            _id = it.get("id", i+1)
+            out.append({"id": int(_id), "nombre": str(it["nombre"]).strip()})
+        else:
+            out.append({"id": i+1, "nombre": str(it)})
+    return out
+
+def publish_prompts_for_entities (isbn: str,
+    autor: str | None,
+    titulo: str | None,
+    genero: str | None,
+    personajes: List[Any],
+    lugares: List[Any],
+) -> dict:
+    res = {"ok": False, "count_personajes": 0, "count_lugares": 0, "reason": None}
+    params = _mk_rabbit_params()
+    if params is None:
+        res["reason"] = "rabbit_not_configured"
+        return res
+    conn = None
+    try:
+        conn = pika.BlockingConnection(params)
+        ch = conn.channel()
+        _ensure_prompts_topology(ch)
+
+        props = pika.BasicProperties(content_type="application/json", delivery_mode=2)
+
+        pj = _normalize_entities(personajes)
+        lg = _normalize_entities(lugares)
+
+        for e in pj:
+            payload = {"isbn": isbn, "tipo": "personaje", "id": int(e["id"]), "nombre": e["nombre"]}
+            ch.basic_publish(RABBIT_EXCHANGE, RABBIT_RK_PROMPTS_PERSONAJE, json.dumps(payload).encode("utf-8"), properties=props)
+        for e in lg:
+            payload = {"isbn": isbn, "tipo": "lugar", "id": int(e["id"]), "nombre": e["nombre"]}
+            ch.basic_publish(RABBIT_EXCHANGE, RABBIT_RK_PROMPTS_LUGAR, json.dumps(payload).encode("utf-8"), properties=props)
+
+        res["ok"] = True
+        res["count_personajes"] = len(pj)
+        res["count_lugares"] = len(lg)
+        return res
+    except Exception as e:
+        res["reason"] = f"{type(e).__name__}: {e}"
+        return res
+    finally:
+        try:
+            if conn: conn.close()
+        except Exception:
+            pass
 
 
 # =======================
@@ -387,6 +662,8 @@ async def on_startup():
     if not scheduler.running:
         scheduler.start()
         print("[scheduler] started")
+    loop = asyncio.get_event_loop()
+    start_rabbit_listener(loop)
 
 
 @app.on_event("shutdown")
